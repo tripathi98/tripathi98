@@ -1,0 +1,100 @@
+div.message { 
+    cursor: pointer;
+    display: block;
+    font-weight: normal;
+    padding: 0 1.5rem 0 1.5rem;
+    transition: height 300ms ease-out 0s;
+    background-color: #a0d3e8;
+    color: #626262;
+    top: 15px;
+    right: 15px;
+    z-index: 999;
+    overflow: hidden;
+    height: 50px;
+    line-height: 3.0em;
+	white-space: nowrap;
+}
+
+div.message:before {
+    line-height: 0px;
+    font-size: 20px;
+    height: 12px;
+    width: 12px;
+    border-radius: 15px;
+    text-align: center;
+    vertical-align: middle;
+    display: inline-block;
+    position: relative;
+    left: -11px;
+    background-color: #FFF;
+    padding: 12px 14px 12px 10px;
+    content: "i";
+    color: #a0d3e8;
+}
+
+div.message.error {
+    background-color: #C3232D;
+    color: #FFF;
+}
+
+div.message.error:before {
+    padding: 11px 16px 14px 7px;
+    color: #C3232D;
+    content: "x";
+}
+div.message.hidden {
+    height: 0;
+}
+
+div.message.success {
+    background-color: #419437;
+    color: #FFF;
+}
+
+div.message.success:before {
+    padding: 11px 16px 14px 7px;
+    color: #277137;
+    content: "x";
+}
+
+.date_search{
+	width:150px
+}
+.error-message{color:#F00;}
+.table-inline-actions{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.table-inline-actions img{
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+.paginator .pagination {
+    padding: 10px;
+    border: 1px solid #CCC;
+    display: inline-flex;
+    border-radius: 6px;
+}
+.paginator .pagination li{
+	padding: 0px;
+    padding-left: 5px;
+    padding-right: 5px;
+    border-right: 1px solid #CCC;
+	border-bottom: 0px !important; 
+    
+}
+.paginator .pagination li:last-child{
+    border-right: 0px solid #CCC;
+}
+
+.paginator .pagination li.prev a, .paginator .pagination li.next a{
+    color: #000;
+    font-weight: bold;
+}
+.paginator .pagination li.prev.disabled a, .paginator .pagination li.next.disabled a{
+    color: #CCC;
+    font-weight: bold;
+    cursor: not-allowed;
+}

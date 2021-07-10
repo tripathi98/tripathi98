@@ -5,20 +5,10 @@ use Cake\ORM\Query;
 use Cake\ORM\RulesChecker;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
+use Cake\ORM\Rule\IsUnique;
 
 /**
- * Users Model
- *
- * @method \App\Model\Entity\User get($primaryKey, $options = [])
- * @method \App\Model\Entity\User newEntity($data = null, array $options = [])
- * @method \App\Model\Entity\User[] newEntities(array $data, array $options = [])
- * @method \App\Model\Entity\User|false save(\Cake\Datasource\EntityInterface $entity, $options = [])
- * @method \App\Model\Entity\User saveOrFail(\Cake\Datasource\EntityInterface $entity, $options = [])
- * @method \App\Model\Entity\User patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
- * @method \App\Model\Entity\User[] patchEntities($entities, array $data, array $options = [])
- * @method \App\Model\Entity\User findOrCreate($search, callable $callback = null, $options = [])
- *
- * @mixin \Cake\ORM\Behavior\TimestampBehavior
+ * Users Model 
  */
 class UsersTable extends Table
 {
@@ -37,6 +27,11 @@ class UsersTable extends Table
         $this->setPrimaryKey('id');
 
         $this->addBehavior('Timestamp');
+		
+		$this->hasMany('UserRoles');
+		
+		$this->hasMany('Leaves');
+		$this->hasMany('UserAccessdates');
     }
 
     /**
@@ -56,29 +51,99 @@ class UsersTable extends Table
             ->maxLength('name', 50)
             ->requirePresence('name', 'create')
             ->notEmptyString('name');
- 
-        $validator
-            ->scalar('password')
-            ->maxLength('password', 255)
-            ->requirePresence('password', 'create')
-            ->notEmptyString('password');
+  
+		$validator->requirePresence('password')
+            ->notEmpty('password', 'please enter password.')
+			->minLength('password', 8)
+			->add('password',[
+                    'matches'=> [
+                        'rule' => function($value, $stuff) {
+                                return $value === $stuff['data']['password'];
+                            },
+                        'message' => 'Password does not match.'
+                    ]
+                ]
+            );
+
+		$validator->requirePresence('confirm_password', 'please enter confirm password.')
+            ->notEmpty('confirm_password', 'please enter confirm password.')
+			->add('confirm_password',[
+                    'matches'=> [
+                        'rule' => function($value, $stuff) {
+                                return $value === $stuff['data']['password'];
+                            },
+                        'message' => 'Password does not match.'
+                    ]
+                ]
+            );
 
         $validator
             ->email('email')
             ->requirePresence('email', 'create')
             ->notEmptyString('email');
+			
+		$validator		
+			->add('email', 'unique', [
+                    'rule' => 'validateUnique',
+                    'provider' => 'table',
+                    'message' => 'Email is already used'
+             ]); 
 
         $validator
             ->scalar('phone')
             ->maxLength('phone', 25)
             ->requirePresence('phone', 'create')
             ->notEmptyString('phone');
+		
+		$validator		
+			->add('phone', 'unique', [
+                    'rule' => 'validateUnique',
+                    'provider' => 'table',
+                    'message' => 'Phone is already used'
+             ]);
+
+        return $validator;
+    }
+	
+	public function validationAdduser(Validator $validator)
+    {
+        $validator
+            ->integer('id')
+            ->allowEmptyString('id', null, 'create');
 
         $validator
-            ->date('birthdate')
-            ->requirePresence('birthdate', 'create')
-            ->notEmptyDate('birthdate');
+            ->scalar('name')
+            ->maxLength('name', 50)
+            ->requirePresence('name', 'create')
+            ->notEmptyString('name');
+		 
+   
+        $validator
+            ->email('email')
+            ->requirePresence('email', 'create') 		
+            ->notEmptyString('email');
+		
+		$validator		
+			->add('email', 'unique', [
+                    'rule' => 'validateUnique',
+                    'provider' => 'table',
+                    'message' => 'Email is already used'
+             ]);  
 
+        $validator
+            ->scalar('phone')
+            ->maxLength('phone', 25) 
+            ->requirePresence('phone', 'create')
+            ->notEmptyString('phone');
+			
+		$validator		
+			->add('phone', 'unique', [
+                    'rule' => 'validateUnique',
+                    'provider' => 'table',
+                    'message' => 'Phone is already used'
+             ]);
+			 
+  
         return $validator;
     }
 
@@ -89,13 +154,13 @@ class UsersTable extends Table
      * @param \Cake\ORM\RulesChecker $rules The rules object to be modified.
      * @return \Cake\ORM\RulesChecker
      */
-    public function buildRules(RulesChecker $rules)
+	/* public function buildRules(RulesChecker $rules)
     {
         $rules->add($rules->isUnique(['phone']));
         $rules->add($rules->isUnique(['email']));
 
         return $rules;
-    }
+    }  */  
 	
 	public function findAuth(\Cake\ORM\Query $query, array $options)
 	{
@@ -108,7 +173,8 @@ class UsersTable extends Table
 			],
 			[],
 			true
-		);
+		); 
+		
 	}
 	
 	 

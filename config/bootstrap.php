@@ -43,6 +43,8 @@ use Cake\Mailer\TransportFactory;
 use Cake\Utility\Inflector;
 use Cake\Utility\Security;
 
+use Cake\ORM\TableRegistry;
+
 /*
  * Uncomment block of code below if you want to use `.env` file during development.
  * You should copy `config/.env.example` to `config/.env` and set/modify the
@@ -191,6 +193,12 @@ Type::build('datetime')
     ->useImmutable();
 Type::build('timestamp')
     ->useImmutable();
+	
+	
+Cake\I18n\Date::setToStringFormat('yyyy-MM-dd');
+Cake\I18n\FrozenDate::setToStringFormat('yyyy-MM-dd');
+ 
+
 
 /*
  * Custom Inflector rules, can be set to correctly pluralize or singularize
@@ -201,3 +209,21 @@ Type::build('timestamp')
 //Inflector::rules('irregular', ['red' => 'redlings']);
 //Inflector::rules('uninflected', ['dontinflectme']);
 //Inflector::rules('transliteration', ['/å/' => 'aa']);
+
+// settings
+$data = TableRegistry::get('Settings');
+$query = $data->find('all');
+ 
+$results = $query->toArray();
+
+if(!empty($results)){
+	foreach($results as $result){  
+		Configure::write("App.".$result->slug,$result->value); 
+	}
+}  
+
+
+define('ACTIVE','1');
+define('INACTIVE','2');
+define('DELETED','0');
+
