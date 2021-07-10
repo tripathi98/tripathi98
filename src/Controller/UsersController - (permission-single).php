@@ -53,7 +53,7 @@ class UsersController extends AppController
         $userTable = TableRegistry::get('Users');
         $userRoleTable = TableRegistry::get('UserRoles');
         $user = $userTable->newEntity();
-		  
+
         if($this->request->is(['post','put'])){
             $record = $userTable->find()->where(['OR' => [
 				'email'=>$this->request->getData()['email_or_phone'],
@@ -79,14 +79,13 @@ class UsersController extends AppController
 						return $this->redirect(['action' => 'login']);
 					}
 					 
-					$isAcsessToday = $this->checkHaveAccessToday($uid,$today);
- 
-					if(empty($isAcsessToday) && $uid != '1'){
-						$this->Flash->error(__('Your time up. Please contact to administrator.'));
-						return $this->redirect(['action' => 'login']); 
-					}					
 					
-					 
+					if($access_from <= $today && $access_to <= $today){}else{ 
+						if($uid != '1'){
+							$this->Flash->error(__('Your time up. Please contact to administrator.'));
+							return $this->redirect(['action' => 'login']); 
+						} 
+					}
 					//get user role
 					if($uid != '' && $uid != '1'){
 						
@@ -341,155 +340,21 @@ class UsersController extends AppController
     public function index()
     {   
         $dataList = TableRegistry::get('Users');
-		$leaveTable= TableRegistry::get('Leaves');
-		
         $savesearch = array();
         $filters = array();
         $order = array('Users.id'=>'desc');
 
         $filters['Users.id !='] = 1;
-		if ($this->request->is(['post', 'put', 'ajax'])) {
-			 
+		if ($this->request->is(['post', 'put'])) {
 			$date_from = $this->request->getData()['date_from'];
 			$date_to = $this->request->getData()['date_to'];
 			
-			$role_id_filter = $this->request->getData()['role_id_filter'];
-			$module_filer = $this->request->getData()['module_filer'];
-			$status_id = $this->request->getData()['status_id'];
-			
 			$savesearch['date_from'] = $date_from;
 			$savesearch['date_to'] = $date_to;
-			$savesearch['role_id_filter'] = $role_id_filter;
-			$savesearch['module_filer'] = $module_filer;
-			$savesearch['status_id'] = $status_id;
-			
-			$user_roles = TableRegistry::get('UserRoles');
-			
-			if(!empty($role_id_filter)){  
-				$role_id_filter = array_unique($role_id_filter);
-				$userIds = array();
-				foreach($role_id_filter as $vals){ 
-				 
-					$data = $user_roles->find()
-						->where([
-							'role_id' => $vals
-						])
-						->select(['user_id'])
-						->group(['user_id'])
-						->toArray();
-						 
-					if(!empty($data)){
-						foreach($data as $resl){  
-							$userIds[] = $resl->user_id; 
-						}
-					}
-				}
-				
-				if(!empty($userIds)){ 
-					$userIds = array_unique($userIds);
-					$filters['Users.id IN'] = $userIds; 
-				} 
-			}
-			
-			$today = date("Y-m-d");
-			$userIdss = array();
-			
-			if(!empty($status_id)){ 
-				foreach($status_id as $vals){ 
-					if($vals == '1'){
-						$filters['Users.status'] = $vals; 
-					}
-					if($vals == '3'){ 
-						$usersData = $leaveTable->find('all')
-							->where(['Leaves.date_from <=' => $today,'Leaves.date_to >=' => $today])
-							->select(['Leaves.user_id'])
-							->toArray();
-							
-						if(!empty($usersData)){
-							foreach($usersData as $resl){  
-								$userIdss[] = $resl->user_id; 
-							}
-						}
-
-						if(!empty($userIdss)){ 
-							$userIdss = array_unique($userIdss);
-							$filters['Users.id IN'] = $userIdss; 
-						}  
-					}
-					if($vals == '4'){
-						$usersData = $leaveTable->find('all')
-							->where(['Leaves.date_to >=' => $today])
-							->select(['Leaves.user_id'])
-							->toArray();
-							
-						if(!empty($usersData)){
-							foreach($usersData as $resl){  
-								$userIdss[] = $resl->user_id; 
-							}
-						}
-
-						if(!empty($userIdss)){ 
-							$userIdss = array_unique($userIdss);
-							$filters['Users.id IN'] = $userIdss; 
-						} 
-					}
-				}   
-			}
-			 
-			if(!empty($module_filer)){ 
-				$permissions = TableRegistry::get('Permissions');
-				
-				$roleIds = array();
-				
-				foreach($module_filer as $val){ 
-					$query = $permissions->find()
-						->where([
-							'module' => $val,
-							'OR' => [['can_view' => 1], ['can_add' => 1], ['can_edit' => 1], ['can_delete' => 1]],
-						])
-						->select(['role_id'])->toArray();
-					 
-					if(!empty($query)){
-						foreach($query as $res){ 
-							$roleId = explode(',',$res->role_id);
-							
-							$roleIds = array_merge($roleIds, $roleId); 
-							
-						}
-					}
-				} 
-				
-				$roleIds = array_unique($roleIds);
-				 
-				if(!empty($roleIds)){ 
-					$userIdsa = array();
-					foreach($roleIds as $vals){ 
-					 
-						$data = $user_roles->find()
-							->where([
-								'role_id' => $vals
-							])
-							->select(['user_id'])
-							->group(['user_id'])
-							->toArray();
-							 
-						if(!empty($data)){
-							foreach($data as $resl){  
-								$userIdsa[] = $resl->user_id; 
-							}
-						}
-					}
-					
-					if(!empty($userIdsa)){ 
-						$userIdsa = array_unique($userIdsa);
-						$filters['Users.id IN'] = $userIdsa; 
-					}
-					
-				} 
-			}
 			
 			if($date_from != '' && $date_to != ''){ 
-				$filters['Users.created >='] = $date_from; 
+				$filters['Users.created >='] = $date_from;
+				
 				$filters['Users.created <='] = $date_to;
 			}else if($date_from != '' && $date_to == ''){
 				$filters['Users.created >='] = $date_from;
@@ -497,109 +362,23 @@ class UsersController extends AppController
 				$filters['Users.created <='] = $date_to;
 			}  
 		} 
-		 
+		
         $users = $this->paginate($dataList, [
             'limit' => Configure::read('pageRecord'),
             'conditions' => [$filters],
-            'contain' => ['UserAccessdates','Leaves','UserRoles'=>['Roles']],
+            'contain' => ['UserRoles'=>['Roles']],
             'recursive' => 2,
             'order'=>$order
         ]);
 		 
 		$RoleTable= TableRegistry::get('Roles');
-		 
-		$roles = $RoleTable->find('all')
-							->where(['Roles.status' => '1','Roles.id !=' => '1'])->toArray();
-		 			
-		$modules = array('User'=>'User','Role'=>'Role','Boiler'=>'Boiler','Expeller'=>'Expeller','Oil Tank System'=>'Oil Tank System','Way Bridge'=>'Way Bridge');
-		
-		
-		/* Leave data */
-		 
-		//$leave_filters['Leaves.date_from >='] = date("Y-m-d");
-		$leave_filters  = array();
-		$orders = array('Leaves.id'=>'asc');
-		
-		$leavesArr = $this->paginate($leaveTable, [
-            'limit' => Configure::read('pageRecord'),
-            'contain' => ['Users' => function($q) {
-				return $q
-					->select([
-							'Users.id','Users.name'
-				]);
-			}],  
-            'conditions' => [$leave_filters],  
-            'order'=>$orders
-        ]);
-		
-		$usersList = $dataList->find('list')
-						->where(['Users.status' => '1','Users.id !=' => '1']);
-		 
-		$this->set(compact('users','savesearch','roles','modules','leavesArr','usersList')); 
-    }
-
-    
-	/**
-     * profile method
-     *
-     * @param string|null $id User id.
-     * @return \Cake\Http\Response|null Redirects on successful edit, renders view otherwise.
-     * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
-     */
-    public function profile()
-    {
-        
-		$userTable= TableRegistry::get('Users');
-		$user = $userTable->get($this->Auth->user('id'), [
-            'contain' => ['UserRoles'],
-        ]);
-		 
-		$leaveTable= TableRegistry::get('Leaves');
-		
-		if($this->request->is(['patch', 'post', 'put'])){
-
-            $user = $userTable->patchEntity($user, $this->request->getData(),['validate'=>'myaccount']);
-
-            if(empty($this->request->getData()['avatar']['name']))
-			{
-				unset($user->avatar);
-			}
-			else
-			{
-				$imageData = $this->request->getData()['avatar'];
-				$img = $this->My->uploadfile($imageData, 'user');
-				$user->avatar = $img;
-			}
-			unset($user->status);
-			unset($user->password);
-			 
-            if ($userTable->save($user)) {
-                 
-				$this->Flash->success(__('Profile updated successfully')); 
-
-                return $this->redirect(['action'=>'profile']);
-				
-            }else{  
-                $this->Flash->error(__('Something went wrong.Please try again.'));
-
-                return $this->redirect(['action'=>'profile']);
-            }
-        }
-		
-		$RoleTable= TableRegistry::get('Roles');
-		
 		$roles = $RoleTable->find('list')
-							->where(['Roles.status' => '1']);
-							
-		$usersLeaveData = $leaveTable->find('all')->where([
-			'user_id' => $id
-		])->toArray();
+						->where(['Roles.status' => '1']);
 		 
-        $this->set(compact('user','roles','role_id','roleId','usersLeaveData'));
+		$this->set(compact('users','savesearch','roles')); 
     }
-	
-	
-	/**
+
+    /**
      * dashboard method
      *
      * @param string|null $id User id.
@@ -623,12 +402,10 @@ class UsersController extends AppController
      */
     public function add()
     { 
-		$this->autoRender = false;
 		$userTable= TableRegistry::get('Users');
-		
-		$userAccessTable= TableRegistry::get('UserAccessdates');
 	 
-        if ($this->request->is('ajax')) { 	
+        if ($this->request->is('post')) {
+			 
 			$user =	$userTable->newEntity($this->request->getData(),['validate' => 'adduser']);
 			   
 			$user->created_by = $this->Auth->user('id');
@@ -636,56 +413,23 @@ class UsersController extends AppController
 			
 			$token = $user->token =  bin2hex(openssl_random_pseudo_bytes(10));
 			$password = $user->password = $this->generateRandomString(8);
-		   
+		  
 			if(!$user->getErrors()) {
 			
 				if ($result = $userTable->save($user)) {
 					
-					$role_ids = $this->request->getData()['role_id'];
-			 	 
-					if(!empty($role_ids)){
-						foreach($role_ids as $rlid){
-							$rolesData = array(
-								'user_id' => $result->id,
-								'role_id' => $rlid,
-								'created_by' => $this->Auth->user('id'),
-								'status' => ACTIVE
-							);
-							
-							$userRoleTable= TableRegistry::get('UserRoles');
-							
-							$user_roles = $userRoleTable->newEntity($rolesData);
-							
-							$userRoleTable->save($user_roles);
-						}
-					}
+					$rolesData = array(
+						'user_id' => $result->id,
+						'role_id' => $this->request->getData()['role_id'],
+						'created_by' => $this->Auth->user('id'),
+						'status' => ACTIVE
+					);
 					
-					//save access date of user 
-					 
-					if(!empty($this->request->getData()['access_from'])){
-						$access_from =  $this->request->getData()['access_from'];
-						
-						 
-						foreach($access_from as $key=>$datefrom) {
-							
-							if(isset($this->request->getData()['access_from'][$key]) && $this->request->getData()['access_from'][$key] != ''){
-								$access_to = $this->request->getData()['access_to'][$key];
-							}else{
-								$access_to = $this->request->getData()['access_from'][$key];
-							}
-							
-							$record = array(
-								'user_id' => $result->id,
-								'access_from' =>  $datefrom,
-								'access_to' => 	$access_to,
-								'created_by' => $this->Auth->user('id') 
-							);
-							 
-							$userAccess = $userAccessTable->newEntity($record);
-							$userAccessTable->save($userAccess);
-							 
-						}
-					}
+					$userRoleTable= TableRegistry::get('UserRoles');
+					
+					$user_roles = $userRoleTable->newEntity($rolesData);
+					
+					$userRoleTable->save($user_roles);
 					
 					$username = ucfirst($user->name);
 					$activation_link = Router::url('/', true).'users/activateaccount/'.$token.'/'.base64_encode($user->id);
@@ -694,44 +438,38 @@ class UsersController extends AppController
 							->where(['EmailTemplates.slug' => 'user_add']);
 					$template = $query->first();
 					$userEmail = $user->email;
-					  
-					$mailMessage = str_replace(array('{{username}}', '{{activation_link}}','{{email}}','{{password}}'),
-					array(ucfirst($username),$activation_link,$userEmail,$password),$template->description);
-					$to = $userEmail;
-					$subject = $template->subject;
-					$message = $mailMessage; 
-					
 					try {
-						parent::sendMailTo($to, $subject, $message);
-						
-						$response = array(
-							'status' => '200',
-							'msg' => 'User added successfully'
-						);
-						
-						$this->Flash->success(__('User added successfully'));
-						
-					}catch (Exception $e) { 
-						$response = array(
-							'status' => '500',
-							'msg' => 'The user has been saved. But activation link could not be sent'
-						);
-					} 
+
+						$mailMessage = str_replace(array('{{username}}', '{{activation_link}}','{{email}}','{{password}}'),
+						array(ucfirst($username),$activation_link,$userEmail,$password),$template->description);
+						$to = $userEmail;
+						$subject = $template->subject;
+						$message = $mailMessage; 
+
+						if(parent::sendMailTo($to, $subject, $message)){
+							
+							$this->Flash->success(__('The user has been saved.'));
+							return $this->redirect(['action' => 'index']);
+						}
+					}catch (Exception $e) {
+						$this->Flash->error(__('The user has been saved. But activation link could not be sent.')); 
+					}  
 				}else{
-					$response = array(
-						'status' => '500',
-						'msg' => 'The user could not be saved. Please, try again'
-					);
+					$this->Flash->error(__('The user could not be saved. Please, try again.'));
 				}
 			}else{
-				$response = array(
-					'status' => '500',
-					'msg' => $this->errorMessage($user->getErrors())
-				); 
+				$this->Flash->error(__($this->errorMessage($user->getErrors())));
 			}
-
-			echo json_encode($response);die;
-        }  
+            
+			return $this->redirect(['action' => 'index']);
+        } 
+		
+		$RoleTable= TableRegistry::get('Roles');
+		
+		$roles = $RoleTable->find('list')
+							->where(['Roles.status' => '1']);
+		
+		$this->set(compact('user','roles'));
     }
 
     /**
@@ -741,20 +479,23 @@ class UsersController extends AppController
      * @return \Cake\Http\Response|null Redirects on successful edit, renders view otherwise.
      * @throws \Cake\Datasource\Exception\RecordNotFoundException When record not found.
      */
-    public function edit()
+    public function edit($id = null)
     {
-		$this->autoRender = false;
-		 
-		$leaveTable= TableRegistry::get('Leaves');
+        $user = $this->Users->get($id, [
+            'contain' => ['UserRoles'],
+        ]);
 		
-		$userAccessTable= TableRegistry::get('UserAccessdates');
+		$role_id = 0;		
+		$roleId = '';		
+		if(!empty($user->user_role)){
+			$role_id = $user->user_role->role_id;
+			$roleId = $user->user_role->id;
+		} 
+		
+		$leaveTable= TableRegistry::get('Leaves');
 		 
-        if ($this->request->is(['patch', 'post', 'put','ajax'])) {
+        if ($this->request->is(['patch', 'post', 'put'])) {
 			 
-			$user = $this->Users->get($this->request->getData()['id'], [
-				'contain' => ['UserRoles'],
-			]);
-			  
             $user = $this->Users->patchEntity($user, $this->request->getData(),['validate' => 'adduser']);
 			$user->updated_by = $this->Auth->user('id');
 			
@@ -763,75 +504,87 @@ class UsersController extends AppController
 				if ($this->Users->save($user)) {
 					
 					// update user role
-					
-					$role_ids = $this->request->getData()['role_id'];
+					$roleID = $this->request->getData()['roleId'];
 					
 					$userRoleTable= TableRegistry::get('UserRoles');
-			 	 
-					if(!empty($role_ids)){
-						$userRoleTable->deleteAll(['UserRoles.user_id'=>$this->request->getData()['id']],false);
+					
+					if($roleID != ''){
+						$userRole = $userRoleTable->get($roleID);
 						
-						foreach($role_ids as $rlid){
-							$rolesData = array(
-								'user_id' => $this->request->getData()['id'],
-								'role_id' => $rlid,
-								'created_by' => $this->Auth->user('id'),
-								'updated_by' => $this->Auth->user('id'),
-								'status' => ACTIVE
-							);
-							 
-							$user_roles = $userRoleTable->newEntity($rolesData);
-							
-							$userRoleTable->save($user_roles);
-						}
+						$roles = array(
+							'user_id' => $id,
+							'role_id' => $this->request->getData()['role_id'], 
+							'updated_by' => $this->Auth->user('id'),
+							'status' => ACTIVE
+						); 
+						$user_roles = $userRoleTable->patchEntity($userRole,$roles);
+					}else{
+						$roles = array(
+							'user_id' => $id,
+							'role_id' => $this->request->getData()['role_id'],
+							'created_by' => $this->Auth->user('id'), 
+							'status' => ACTIVE
+						); 
+						$user_roles = $userRoleTable->newEntity($roles);
 					}
-					  
-					//save access date of user 
-					 
-					if(!empty($this->request->getData()['access_from'])){
-						$access_from =  $this->request->getData()['access_from'];
+					
+					
+					$userRoleTable->save($user_roles);
+					
+					//save leaves of user 
+					
+					
+					
+					if(!empty($this->request->getData()['date_from'])){
+						$from_date =  $this->request->getData()['date_from'];
+						 
+						$leaveTable->deleteAll(['Leaves.user_id'=>$id],false); 
 						
-						$userAccessTable->deleteAll(['UserAccessdates.user_id'=>$this->request->getData()['id']],false); 
-						
-						foreach($access_from as $key=>$datefrom) {
+						foreach($from_date as $key=>$datefrom) {
 							
-							if(isset($this->request->getData()['access_from'][$key]) && $this->request->getData()['access_from'][$key] != ''){
-								$access_to = $this->request->getData()['access_to'][$key];
+							if(isset($this->request->getData()['date_from'][$key]) && $this->request->getData()['date_from'][$key] != ''){
+								$date_to = $this->request->getData()['date_to'][$key];
 							}else{
-								$access_to = $this->request->getData()['access_from'][$key];
+								$date_to = $this->request->getData()['date_from'][$key];
 							}
 							
-							$record = array(
-								'user_id' => $this->request->getData()['id'],
-								'access_from' =>  $datefrom,
-								'access_to' => 	$access_to,
+							$records = array(
+								'user_id' => $id,
+								'date_from' =>  $datefrom,
+								'date_to' => 	$date_to,
 								'created_by' => $this->Auth->user('id'),
 								'updated_by' => $this->Auth->user('id')
 							);
+							
+							$leave = $leaveTable->newEntity($records);
 							 
-							$userAccess = $userAccessTable->newEntity($record);
-							$userAccessTable->save($userAccess);
-							 
+							if ($leaveTable->save($leave)) {
+								$error = false;
+							} 
 						}
-					} 
-					 
-					$response = array(
-						'status' => '200',
-						'msg' => 'User added successfully'
-					);
-						 
-					$this->Flash->success(__('The user has been saved.')); 
+					}
+					
+					
+					$this->Flash->success(__('The user has been saved.'));
+
+					return $this->redirect(['action' => 'index']);
 				}
 			}else{
-				$response = array(
-					'status' => '500',
-					'msg' => $this->errorMessage($user->getErrors())
-				); 
+				$this->Flash->error(__($this->errorMessage($user->getErrors())));
 			}
              
         }
 		
-		echo json_encode($response);die;
+		$RoleTable= TableRegistry::get('Roles');
+		
+		$roles = $RoleTable->find('list')
+							->where(['Roles.status' => '1']);
+							
+		$usersLeaveData = $leaveTable->find('all')->where([
+			'user_id' => $id
+		])->toArray();
+		 
+        $this->set(compact('user','roles','role_id','roleId','usersLeaveData'));
     }
 
     /**
@@ -903,8 +656,7 @@ class UsersController extends AppController
      * @return void
      */
 	 
-      
-	public function permissions()
+    public function permissions()
     {
         $rolesTable = TableRegistry::get('Roles');
 		$permissionsTable = TableRegistry::get('Permissions');
@@ -913,171 +665,11 @@ class UsersController extends AppController
 							->where(['Roles.status' => '1','Roles.id !=' => '1']);
 		
 		$modules = array('User','Role','Boiler','Expeller','Oil Tank System','Way Bridge');
-		 			
-		$savesearch = array();
-		 
+		
 		if($this->request->is(['post','put'])) {
-			$module_filer = $this->request->getData()['module_filter'];
-			$status_id = $this->request->getData()['status_id'];
-			
-			$savesearch['module_filer'] = $module_filer;
-			$savesearch['status_id'] = $status_id;
 			 
-			$filters = array();
-			
-			if(!empty($module_filer)){ 
-				foreach($module_filer as $val){ 
-					//$filters['OR'][]['Permissions.module'] = $val; 
-					$filters['Permissions.module'] = $val; 
-					$filters['OR'][]['Permissions.can_view'] = 1; 
-					$filters['OR'][]['Permissions.can_edit'] = 1;
-					$filters['OR'][]['Permissions.can_delete'] = 1;
-					$filters['OR'][]['Permissions.can_add'] = 1; 
-				}	
-			}else{
-			
-				if(!empty($status_id)){ 
-					foreach($status_id as $vals){ 
-						if($vals == '1'){
-							$filters['OR'][]['Permissions.can_view'] = 1; 
-						}
-						else if($vals == '2'){
-							$filters['OR'][]['Permissions.can_edit'] = 1;
-						}
-						else if($vals == '3'){
-							$filters['OR'][]['Permissions.can_delete'] = 1;
-						}
-						else if($vals == '4'){
-							$filters['OR'][]['Permissions.can_add'] = 1;
-						}
-					}   
-				}
-			}
-			 
-			$permissionsData = $rolesTable->find('all')
-				->where(['Roles.status' => '1','Roles.id !=' => '1'])
-				->matching('Permissions', function(\Cake\ORM\Query $q) use($filters) {
-					$res =  $q 
-						->where($filters);
-					return $res;
-				}) 
-				->contain('Permissions') 
-				->group('Roles.id') 
-				->toArray();			
-			  
-		}else{
-			$permissionsData = $rolesTable->find('all')
-				->where(['Roles.status' => '1','Roles.id !=' => '1'])
-				->matching('Permissions') 
-				->contain('Permissions') 
-				->group('Roles.id') 
-				->toArray();
-				
-		}  
-		
-		$this->set(compact('rolelist','modules','permissionsData','savesearch'));
-    }
-	
-	
-	public function denied(){
-		 
-    }
-	
-	public function deletepermission($id = null){
-		$this->autoRender = false;
-		if($id) {  
-			$permissionsTable = TableRegistry::get('Permissions');
-			  
-			$permissionsTable->deleteAll(['Permissions.role_id'=>$id],false);
-			$this->Flash->success(__('Permission deleted successfully')); 
-			return $this->redirect(['controller'=>'users', 'action' => 'permissions']);
-			 
-		}
-    }
-	
-	
-	public function editdata(){
-		$this->viewBuilder()->setLayout(''); 
-		$userTable= TableRegistry::get('Users');
-		
-		$leaveTable= TableRegistry::get('Leaves');
-		
-		$rolesTable = TableRegistry::get('Roles');
-		
-		$userAccessTable= TableRegistry::get('UserAccessdates');
-	 
-        if ($this->request->is('ajax')) {
-			$id = $this->request->getData()['id'];
-			 
-			$user = $this->Users->get($id, [
-				'contain' => ['UserRoles'],
-			]); 
-			  
-			$usersAccessData = $userAccessTable->find('all')->where([
-				'user_id' => $id
-			])->toArray(); 
-			
-			$roleIds = parent::getUserRole($id);
-			
-			$permissionsData = $rolesTable->find('all')
-				->where(['Roles.id IN' => $roleIds])
-				->matching('Permissions') 
-				->contain('Permissions') 
-				->group('Roles.id') 
-				->toArray();  
-		}
-		
-		$RoleTable= TableRegistry::get('Roles');
-		 
-		$roles = $RoleTable->find('all')
-							->where(['Roles.status' => '1','Roles.id !=' => '1'])->toArray();
-		 			
-		$modules = array('User'=>'User','Role'=>'Role','Boiler'=>'Boiler','Expeller'=>'Expeller','Oil Tank System'=>'Oil Tank System','Way Bridge'=>'Way Bridge');
-		 
-		$this->set(compact('user','id','roles','modules','usersAccessData','usersLeaveData','permissionsData'));
-	} 
-
-	  
-	public function permissionadd(){
-		$this->autoRender = false;
-		
-		$permissionsTable = TableRegistry::get('Permissions');
-		$rolesTable = TableRegistry::get('Roles');
-	 
-        if ($this->request->is('ajax')) { 	
-			 
-			$role = $this->request->getData()['role'];
 			$permissions = $this->request->getData()['permission'];
-			
-			$error = true;
-			 
-			if(isset($this->request->getData()['added_role'])){
-				$roleId = $this->request->getData()['added_role'];
-				$rolesTable->updateAll(['name' => $role], ['id' => $roleId]);
-			}else{
-				$roleData = $rolesTable->find('all')
-					->where([
-						'name' => $role
-					])
-					->first();
-					 
-				if(!empty($roleData)){
-					$roleId = $roleData->id;
-				}else{
-					$record = array(
-						'name' => $role,
-						'status' =>  1, 
-						'created_by' => $this->Auth->user('id') 
-					);
-					 
-					$roledatas = $rolesTable->newEntity($record);
-					$res = $rolesTable->save($roledatas);
-					$roleId = $res->id;
-				}
-			}
-			
-			$permissionsTable->deleteAll(['Permissions.role_id'=>$roleId],false);
-			 
+			  
 			foreach($permissions as $permission) {
 				$added = isset($permission['can_add']) ? 1 : 0;
 				
@@ -1086,66 +678,94 @@ class UsersController extends AppController
 				$deleted = isset($permission['can_delete']) ? 1 : 0;
 				
 				$can_view = isset($permission['can_view']) ? 1 : 0;
-				 
+				
 				$records = array(
-					'role_id' => $roleId,
+					'role_id' => implode(',',$permission['role']),
 					'module' =>  $permission['module'] ,
 					'can_view' => $can_view,
 					'can_add' => $added,
 					'can_edit' => $edited,
 					'can_delete' => $deleted
 				);
-				   
-				$permissionEntity = $permissionsTable->newEntity($records);
 				
-				if($permissionsTable->save($permissionEntity)){
-					$error = true;
-				}
+				if(isset($permission['id']) && $permission['id'] != ''){
+					
+					$permissionRes = $permissionsTable->get($permission['id']);
+						 
+					$permissionEntity = $permissionsTable->patchEntity($permissionRes,$records);
+					
+				}else{
+					$permissionEntity = $permissionsTable->newEntity($records); 
+				} 
+				
+				$permissionsTable->save($permissionEntity);
 				 
 			}
-		   
-			if($error) { 
-				$response = array(
-					'status' => '200',
-					'msg' => 'Permission added successfully'
-				);
-			}else{
-				$response = array(
-					'status' => '500',
-					'msg' => "Permission not added. please try again."
-				); 
-			}
-
-			echo json_encode($response);die;  
-        }  
+			$this->Flash->success(__('Permission Updated successfully')); 
+			return $this->redirect(['controller'=>'users', 'action' => 'permissions']);
+		} 
+		$this->set(compact('rolelist','modules'));
     }
 	
 	
-	public function editpermission(){
-		$this->viewBuilder()->setLayout(''); 
-		
-		$rolesTable = TableRegistry::get('Roles');
-		
+	public function permissions()
+    {
+        $rolesTable = TableRegistry::get('Roles');
 		$permissionsTable = TableRegistry::get('Permissions');
+		
+		$permissionsData = $permissionsTable->find('all')->toArray();
 		 
 		$rolelist = $rolesTable->find('all')
 							->where(['Roles.status' => '1','Roles.id !=' => '1']);
 		
 		$modules = array('User','Role','Boiler','Expeller','Oil Tank System','Way Bridge');
-		 
-        if ($this->request->is('ajax')) {
-			$id = $this->request->getData()['id'];
+		
+		if($this->request->is(['post','put'])) {
 			 
-			$permissionsData = $rolesTable->find('all')
-				->where(['Roles.id' => $id])
-				->matching('Permissions') 
-				->contain('Permissions') 
-				->group('Roles.id') 
-				->first(); 
+			$permissions = $this->request->getData()['permission'];
+			  
+			foreach($permissions as $permission) {
+				$added = isset($permission['can_add']) ? 1 : 0;
+				
+				$edited = isset($permission['can_edit']) ? 1 : 0;
+				
+				$deleted = isset($permission['can_delete']) ? 1 : 0;
+				
+				$can_view = isset($permission['can_view']) ? 1 : 0;
+				
+				$records = array(
+					'role_id' => implode(',',$permission['role']),
+					'module' =>  $permission['module'] ,
+					'can_view' => $can_view,
+					'can_add' => $added,
+					'can_edit' => $edited,
+					'can_delete' => $deleted
+				);
+				
+				if(isset($permission['id']) && $permission['id'] != ''){
+					
+					$permissionRes = $permissionsTable->get($permission['id']);
+						 
+					$permissionEntity = $permissionsTable->patchEntity($permissionRes,$records);
+					
+				}else{
+					$permissionEntity = $permissionsTable->newEntity($records); 
+				} 
+				
+				$permissionsTable->save($permissionEntity);
+				 
+			}
+			$this->Flash->success(__('Permission Updated successfully')); 
+			return $this->redirect(['controller'=>'users', 'action' => 'permissionsadd']);
 		} 
+		$this->set(compact('rolelist','modules','permissionsData'));
+    }
+	
+	
+	public function denied(){
 		 
-		$this->set(compact('permissionsData','rolelist','modules'));
-	}
+    }
+	
+	
 	 
-
 }

@@ -15,20 +15,9 @@ use Cake\Routing\Router;
 		 
         <?= $this->Form->create($user,['class'=>"login-form"]) ?>
 			 
-			<?= $this->Flash->render() ?> 
-			  
-			<?php
-			echo $this->Form->control('email_or_phone', [
-				'templates' => [
-					'inputContainer' => '{{content}}'
-				],
-				'label' => false,
-				'class' => 'login-input-control',
-				'placeholder' => 'Mobile number / email',
-				'required'=>true
-			]);
-			?>
-			
+			   
+			<?= $this->Flash->render() ?>
+	 
 			<?php
 			echo $this->Form->control('password', [
 				'templates' => [
@@ -37,34 +26,30 @@ use Cake\Routing\Router;
 				'label' => false,
 				'type' => 'password',
 				'class' => 'login-input-control',
-				'placeholder' => 'Password'
+				'placeholder' => 'Password',
+				'required' => true
 			]);
 			?>
-			 
-			 
+			
+			<?php
+			echo $this->Form->control('password2', [
+				'templates' => [
+					'inputContainer' => '{{content}}'
+				],
+				'label' => false,
+				'type' => 'password',
+				'class' => 'login-input-control',
+				'placeholder' => 'Confirm Password',
+				'required' => true
+			]);
+			?>
+			  
 			<div class="CTA-block">
-				<a href="<?= Router::url('/', true).'forgot'; ?>" class="forgot-link">Forgot Password?</a>
-				<div class="CTA-btn">
-					<a href="<?= Router::url(
-						array('controller' => 'users','action' => 'register')
-					 ); ?>"> 
-						<?= $this->Form->button(
-							'SIGN UP', 
-							[
-								'class'=>'btn-bordered','type' => 'button'
-							]); 
-						?>
-					 </a>
-					<?= $this->Form->button(__('SIGN IN'),['class'=>"btn-solid"]); ?>
+				<a href="<?= Router::url('/', true).'login'; ?>" class="forgot-link">Sign in</a>
+				<div class="CTA-btn"> 
+					<?= $this->Form->button(__('SUBMIT'),['class'=>"btn-solid"]); ?>
 				</div>
 			</div>
         <?= $this->Form->end() ?>
 	</div> 
 </div>
-<script>
-var $div = $('div.message.error');
-
-if ($div.length > 1) {
-   $div.not(':last').remove()
-}
-</script>
